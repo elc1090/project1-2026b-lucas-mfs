@@ -512,6 +512,7 @@ function createChallengeTemplate_() {
       challenge_id: 'example-001',
       version: 1,
       title: 'Example challenge',
+      time_limit_seconds: 300,
       topics: ['example'],
       difficulty: 'introductory',
       intro: [

@@ -5,6 +5,7 @@
     "challenge_id": "web-fundamentos-2026-001",
     "version": 1,
     "title": "O que acontece após o clique?",
+    "time_limit_seconds": 180,
     "topics": [
       "desenvolvimento web",
       "cliente e servidor",

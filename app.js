@@ -9,13 +9,16 @@ const state = {
   selectedStudent: null,
   typedName: "",
   currentChallenge: null,
-  startedAt: Date.now()
+  startedAt: Date.now(),
+  timerInterval: null,
+  timeLeft: null
 };
 
 const studentInput = document.querySelector("#student-input");
 const suggestionsEl = document.querySelector("#student-suggestions");
 const studentStatus = document.querySelector("#student-status");
 const challengeEl = document.querySelector("#challenge");
+const timerContainerEl = document.querySelector("#timer-container");
 const responseForm = document.querySelector("#response-form");
 const submitButton = document.querySelector("#submit-button");
 const feedbackEl = document.querySelector("#feedback");
@@ -77,6 +80,38 @@ async function apiSubmitResponse(payload) {
   }
 
   return data;
+}
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+  const s = (seconds % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
+
+function startTimer(limitSeconds) {
+  clearInterval(state.timerInterval);
+  
+  if (!limitSeconds || limitSeconds <= 0) {
+    timerContainerEl.classList.add("hidden");
+    return;
+  }
+
+  state.timeLeft = limitSeconds;
+  timerContainerEl.classList.remove("hidden");
+  timerContainerEl.textContent = `Tempo restante: ${formatTime(state.timeLeft)}`;
+
+  state.timerInterval = setInterval(() => {
+    state.timeLeft--;
+    
+    if (state.timeLeft <= 0) {
+      clearInterval(state.timerInterval);
+      timerContainerEl.textContent = "O tempo acabou. Você não pode mais enviar a resposta.";
+      submitButton.disabled = true;
+      Array.from(responseForm.elements).forEach(el => el.disabled = true);
+    } else {
+      timerContainerEl.textContent = `Tempo restante: ${formatTime(state.timeLeft)}`;
+    }
+  }, 1000);
 }
 
 function renderBlock(block) {
@@ -229,10 +264,15 @@ function resetFeedback() {
 }
 
 function resetResponseState() {
+  clearInterval(state.timerInterval);
   responseForm.reset();
+  Array.from(responseForm.elements).forEach(el => el.disabled = false);
   resetFeedback();
   clearFormMessage();
   state.startedAt = Date.now();
+  
+  const limit = state.currentChallenge?.challenge?.time_limit_seconds;
+  startTimer(limit);
 }
 
 function showFormMessage(message, type = "error") {
@@ -445,12 +485,13 @@ async function handleSubmit() {
 
   try {
     await apiSubmitResponse(payload);
+    clearInterval(state.timerInterval);
+    timerContainerEl.classList.add("hidden");
     renderFeedback(singleChoiceResult);
     showFormMessage("Resposta enviada com sucesso.", "success");
   } catch (error) {
     console.error(error);
     showFormMessage(error.message || "Não foi possível enviar a resposta.");
-  } finally {
     submitButton.disabled = false;
     submitButton.textContent = "Enviar";
   }
