@@ -76,7 +76,8 @@ function handleRequest_(e, isPost) {
       case 'getStudents':
         return jsonResponse_({ success: true, students: getStudents_() });
       case 'getActiveChallenge':
-        return jsonResponse_({ success: true, current_challenge: getActiveChallenge_() });
+        const challengesResult = getActiveChallengesResult_();
+        return jsonResponse_({ success: true, current_challenge: challengesResult.challenges[0] || null });
       default:
         return jsonResponse_({ success: false, error: `Unsupported GET action: ${action}` });
     }
@@ -101,14 +102,13 @@ function getAction_(e, body) {
 }
 
 function getBootstrap_() {
-  const activeResult = getActiveChallengeResult_();
+  const activeResult = getActiveChallengesResult_();
 
   return {
     success: true,
     app: getConfig_(),
     students: getStudents_(),
-    current_challenge: activeResult.challenge,
-    current_challenge_key: activeResult.challenge ? activeResult.challenge.id : '',
+    daily_challenges: activeResult.challenges,
     message: activeResult.message || '',
   };
 }
@@ -144,13 +144,14 @@ function getStudents_() {
 }
 
 function getActiveChallenge_() {
-  return getActiveChallengeResult_().challenge;
+  const result = getActiveChallengesResult_();
+  return result.challenges.length > 0 ? result.challenges[0] : null;
 }
 
-function getActiveChallengeResult_() {
+function getActiveChallengesResult_() {
   const sheet = getSheetByName_(SHEET_NAMES.CHALLENGES);
   if (!sheet) {
-    return { challenge: null, message: 'Challenges sheet not found.' };
+    return { challenges: [], message: 'Challenges sheet not found.' };
   }
 
   const rows = getSheetData_(sheet);
@@ -162,39 +163,36 @@ function getActiveChallengeResult_() {
   const activeRows = rows.filter(row => isTruthy_(row.active));
 
   if (activeRows.length === 0) {
-    return { challenge: null, message: 'No active challenge configured.' };
+    return { challenges: [], message: 'No active challenge configured.' };
   }
 
-  let match = null;
+  let matches = [];
   let message = '';
 
   if (selectionMode === 'first_active') {
-    match = activeRows[0];
+    matches = [activeRows[0]];
   } else {
-    match = activeRows.find(row => normalizeDate_(row.date, timezone) === today) || null;
+    matches = activeRows.filter(row => normalizeDate_(row.date, timezone) === today);
 
-    if (!match && allowUndatedFallback) {
-      match = activeRows.find(row => !normalizeDate_(row.date, timezone)) || null;
-      if (match) {
+    if (matches.length === 0 && allowUndatedFallback) {
+      matches = activeRows.filter(row => !normalizeDate_(row.date, timezone));
+      if (matches.length > 0) {
         message = 'No challenge matched today; using an undated active challenge as fallback.';
       }
     }
 
-    if (!match) {
-      return {
-        challenge: null,
-        message: `No active challenge found for today (${today}).`,
-      };
+    if (matches.length === 0) {
+      return { challenges: [], message: `No active challenge found for today (${today}).` };
     }
   }
 
-  const challenge = parseJson_(match.challenge_json);
+  const challenges = matches.map(match => {
+    const challenge = parseJson_(match.challenge_json);
+    if (!challenge || typeof challenge !== 'object') return null;
+    return challenge;
+  }).filter(Boolean);
 
-  if (!challenge || typeof challenge !== 'object') {
-    return { challenge: null, message: 'Challenge JSON is malformed.' };
-  }
-
-  return { challenge, message };
+  return { challenges, message };
 }
 
 function submitResponse_(payload) {

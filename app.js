@@ -8,7 +8,11 @@ const state = {
   students: [],
   selectedStudent: null,
   typedName: "",
-  currentChallenge: null,
+  dailyChallenges: [],
+  currentChallengeIndex: 0,
+  get currentChallenge() {
+    return this.dailyChallenges[this.currentChallengeIndex] || null;
+  },
   startedAt: Date.now(),
   timerInterval: null,
   timeLeft: null
@@ -166,11 +170,16 @@ function renderChallenge() {
   }
 
   const challenge = state.currentChallenge.challenge;
+  const currentCount = state.currentChalengeIndex + 1;
+  const totalCount = state.dailyChallenges.length;
+
   submitButton.disabled = false;
 
   challengeEl.innerHTML = `
     <div class="challenge-header">
-      <p class="daily-label">Desafio do dia</p>
+      <p class="daily-label">
+        Desafio do dia ${totalCount > 1 ? `(${currentCount} de ${totalCount})` : ''}
+      </p>
       <h2>${escapeHtml(challenge.title)}</h2>
       <div class="tags">
         ${(challenge.topics ?? []).map(topic => `<span>${escapeHtml(topic)}</span>`).join("")}
@@ -430,6 +439,7 @@ function buildSubmissionPayload(response) {
 
 function renderFeedback(singleChoiceResult) {
   const feedback = state.currentChallenge.feedback ?? {};
+  const hasNext = state.currentChalengeIndex < state.dailyChallenges.length - 1;
 
   feedbackEl.classList.remove("hidden");
   feedbackEl.innerHTML = `
@@ -445,13 +455,30 @@ function renderFeedback(singleChoiceResult) {
       ${(feedback.after_submission ?? []).map(renderBlock).join("")}
     </div>
 
-    <div class="next-challenge-message">
-      <h3>Por hoje é só...</h3>
-      <p>Amanhã tem outro desafio!</p>
-    </div>
+    ${hasNext ? `
+      <div class="next-challenge-message">
+        <h3>Você concluiu esta etapa!</h3>
+        <button id="next-challenge-button" type="button">Ir para o próximo desafio</button>
+      </div>
+    ` : `
+      <div class="next-challenge-message">
+        <h3>Por hoje é só...</h3>
+        <p>Amanhã tem outro desafio!</p>
+      </div>
+    `}
   `;
 
   feedbackEl.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  if (hasNext) {
+    document.querySelector("#next-challenge-button").addEventListener("click", () => {
+      state.currentChallengeIndex++;
+      renderChallenge();
+      renderResponseForm();
+      resetResponseState();
+      document.querySelector(".app-shell").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
 }
 
 async function handleSubmit() {
@@ -506,7 +533,8 @@ async function initApp() {
 
     state.app = bootstrap.app ?? state.app;
     state.students = bootstrap.students ?? [];
-    state.currentChallenge = bootstrap.current_challenge ?? null;
+    state.dailyChallenges = bootstrap.daily_challenges ?? [];
+    state.currentChallengeIndex = 0;
 
     renderChallenge();
     renderResponseForm();

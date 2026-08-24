@@ -465,7 +465,7 @@ code {
   margin-bottom: 22px;
 }
 
-#submit-button {
+#submit-button, #next-challenge-button {
   width: 100%;
   margin-top: 4px;
   border: 3px solid var(--black);
@@ -481,7 +481,7 @@ code {
   box-shadow: 6px 6px 0 var(--black);
 }
 
-#submit-button:hover {
+#submit-button:hover, #next-challenge-button:hover {
   transform: translate(-2px, -2px);
   box-shadow: 8px 8px 0 var(--black);
 }

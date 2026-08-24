@@ -2,6 +2,12 @@
 
 Remake da Aplicação web simples para publicar desafios curtos e registrar respostas de estudantes. O frontend usa HTML, CSS e JavaScript sem frameworks; o backend usa Google Apps Script e Google Sheets.
 
+## Demandas Implentadas
+
+- Adição de um timer por questão
+- Múltiplos desafios por dia
+- Outras demandas já estavam adicionadas
+
 ## Arquivos
 
 - `index.html`, `style.css`, `app.js`, `config.js`: frontend.
