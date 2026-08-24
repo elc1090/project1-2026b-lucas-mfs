@@ -4,9 +4,9 @@ Remake da Aplicação web simples para publicar desafios curtos e registrar resp
 
 ## Demandas Implentadas
 
-- Adição de um timer por questão
-- Múltiplos desafios por dia
-- Outras demandas já estavam adicionadas
+- Adição de um timer por questão.
+- Múltiplos desafios por dia.
+- Outras demandas já estavam implementadas.
 
 ## Arquivos
 

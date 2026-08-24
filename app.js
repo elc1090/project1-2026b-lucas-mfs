@@ -170,7 +170,7 @@ function renderChallenge() {
   }
 
   const challenge = state.currentChallenge.challenge;
-  const currentCount = state.currentChalengeIndex + 1;
+  const currentCount = state.currentChallengeIndex + 1;
   const totalCount = state.dailyChallenges.length;
 
   submitButton.disabled = false;
@@ -439,7 +439,7 @@ function buildSubmissionPayload(response) {
 
 function renderFeedback(singleChoiceResult) {
   const feedback = state.currentChallenge.feedback ?? {};
-  const hasNext = state.currentChalengeIndex < state.dailyChallenges.length - 1;
+  const hasNext = state.currentChallengeIndex < state.dailyChallenges.length - 1;
 
   feedbackEl.classList.remove("hidden");
   feedbackEl.innerHTML = `
