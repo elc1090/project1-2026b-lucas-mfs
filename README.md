@@ -1,33 +1,133 @@
-# Challenge of the Day REMAKE
 
-Remake da Aplicação web simples para publicar desafios curtos e registrar respostas de estudantes. O frontend usa HTML, CSS e JavaScript sem frameworks; o backend usa Google Apps Script e Google Sheets.
+# Projeto: Remake de aplicação web simples
 
-## Demandas Implentadas
 
-- Adição de um timer por questão.
-- Múltiplos desafios por dia.
-- Outras demandas já estavam implementadas.
+## Acesso
 
-## Arquivos
+https://elc1090.github.io/project1-2026b-lucas-mfs/
 
-- `index.html`, `style.css`, `app.js`, `config.js`: frontend.
-- `backend/Code.gs`: API e integração com a planilha.
-- `backend/ChallengeEditor.html`: editor de desafios acessível pelo menu da planilha.
-- `template/challenge-of-the-day-template.xlsx`: modelo de planilha com dados de exemplo (ver planilha-modelo pública acessível no Google Sheets mais abaixo).
-- `template/sample-challenge.json`: exemplo de um desafio.
+## Desenvolvedor(a)
 
-O arquivo `.xlsx` contém apenas a estrutura e os dados. A planilha-modelo distribuída pelo Google Sheets contém o projeto Apps Script vinculado com os arquivos de `backend/`.
+Lucas Medeiros, Sistemas de Informação - UFSM
 
-## Instalação
+## App original
 
-1. Faça uma cópia da **planilha-modelo pública**: https://docs.google.com/spreadsheets/d/1HngfYeFReO--MIo9EO2hOBBWvWgLMtIRwazf4oS0HjA/edit?usp=sharing
-2. Na cópia, abra **Extensões → Apps Script** e confirme que o projeto contém `Code.gs` e `ChallengeEditor.html`.
-3. No Apps Script, crie uma implantação (deploy) do tipo **Web app** e copie a URL terminada em `/exec`.
-4. No frontend, em `config.js`, substitua `GAS_WEB_APP_URL` pela URL da implantação (deploy).
-5. Publique os arquivos do frontend no GitHub Pages ou em outro serviço de hospedagem estática.
+### Links
 
-A planilha possui quatro abas: `Config`, `Students`, `Challenges` e `Responses`. O menu **Challenge of the Day** permite abrir o editor e validar os desafios.
+- Repositório: https://github.com/elc1090/demo-challenge-of-the-day
+
+### Descrição
+
+A aplicação original para publicar desafios curtos e registrar respostas de estudantes. O frontend usa HTML, CSS e JavaScript sem frameworks; o backend usa Google Apps Script e Google Sheets.
+
+## Demanda do(a) cliente
+
+### Cliente
+Professor(a) / Usuário do sistema
+
+### Demanda
+1. "⁠Gostaria de adicionar um cronômetro para cada um dos desafios, com um tempo limite para o estudante enviar a resposta. E o tempo limite poderia ser definido junto com as outras informações do desafio, para que cada um tenha um tempo adequado ao seu nível de dificuldade. Quando o tempo acabar, deve aparecer uma mensagem avisando que não poderá mais enviar a resposta."
+2. "Quero que sejam adicionados mais desafios e que cada um seja associado a uma data específica. Também gostaria que os desafios pudessem ser separados por categorias ou assuntos, com uma etiqueta indicando a categoria e que seja exibida junto ao enunciado da questão."
+3. "Também gostaria de melhorar a interface da página quando não houver um desafio disponível para o dia. Em vez de deixar apenas a mensagem “Nenhum desafio disponível no momento” na área onde normalmente apareceria o desafio, gostaria que fosse apresentada uma interface específica para essa situação, ~~informando também a data do próximo desafio disponível.~~"
+4. ~~"Gostaria que fosse adicionada uma área de desempenho do estudante, mostrando a quantidade de desafios que ele já respondeu, a quantidade de acertos e erros e sua porcentagem de acertos."~~
 
 ## Desenvolvimento
 
-A requisição principal usada pelo frontend é `getBootstrap`; o envio de respostas usa `submitResponse`. A planilha é a fonte de dados do backend.
+### Processo
+
+Iniciei mapeando a comunicação entre o `app.js` e o `Code.gs`. Para a demanda do cronômetro, incluí a propriedade `time_limit_seconds` no JSON do desafio e implementei um `setInterval` no frontend que bloqueia o formulário ao zerar. As etiquetas já possuíam base no código original, exigindo apenas o preenchimento correto da propriedade `topics` na planilha.
+
+O maior desafio foi suportar múltiplos desafios diários. Alterei o backend para retornar um array (`daily_challenges`) e criei um índice global (`currentChallengeIndex`) no frontend. Ao invés de encerrar a sessão após o envio, a interface agora verifica se há mais itens no array e injeta um botão para renderizar o próximo desafio sem recarregar a página.
+
+### Trechos de código
+
+**1. Cronômetro (app.js)**
+Bloqueia os inputs automaticamente quando o tempo acaba.
+```javascript
+function startTimer(limitSeconds) {
+  clearInterval(state.timerInterval);
+  if (!limitSeconds || limitSeconds <= 0) {
+    timerContainerEl.classList.add("hidden");
+    return;
+  }
+  state.timeLeft = limitSeconds;
+  timerContainerEl.classList.remove("hidden");
+  
+  state.timerInterval = setInterval(() => {
+    state.timeLeft--;
+    if (state.timeLeft <= 0) {
+      clearInterval(state.timerInterval);
+      submitButton.disabled = true;
+      Array.from(responseForm.elements).forEach(el => el.disabled = true);
+    }
+  }, 1000);
+}
+
+```
+
+**2. Transição entre desafios (app.js)**
+Avança o índice e re-renderiza o DOM sem reload de página.
+
+```javascript
+  if (hasNext) {
+    document.querySelector("#next-challenge-button").addEventListener("click", () => {
+      state.currentChallengeIndex++;
+      renderChallenge();
+      renderResponseForm();
+      resetResponseState();
+      document.querySelector(".app-shell").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+```
+
+**3. Atualização do Template (Code.gs)**
+Garante que novos desafios criados pelo painel já venham com o tempo limite padrão.
+
+```javascript
+function createChallengeTemplate_() {
+  return {
+    id: 'example-challenge',
+    label: 'Example challenge',
+    challenge: {
+      challenge_id: 'example-001',
+      version: 1,
+      title: 'Example challenge',
+      time_limit_seconds: 300, // Novo campo
+      topics: ['example'],
+      // ...
+    }
+  };
+}
+
+```
+
+## Tecnologias
+
+### Linguagens e afins
+
+* **HTML5 e CSS3:** Estruturação semântica e estilização (Flexbox, Grid) sem frameworks.
+* **JavaScript (ES6+):** Manipulação de DOM, Fetch API, temporizadores e gerenciamento de estado.
+* **Google Apps Script (GAS) & Google Sheets:** Criação de API REST e banco de dados.
+* **JSON:** Formato de estruturação dos desafios e troca de dados.
+
+### Ambiente de desenvolvimento
+
+* **Visual Studio Code:** Editor de código.
+* **Live Server:** Servidor local para desenvolvimento e testes.
+* **Editor do Google Apps Script:** Deploy da API na nuvem.
+* **GitHub Pages:** Hospedagem da aplicação frontend.
+
+## Referências e créditos
+
+* MDN Web Docs (documentação sobre Fetch API e setInterval).
+* [Google Apps Script Reference](https://developers.google.com/apps-script/reference/spreadsheet).
+* Código base fornecido pela disciplina.
+
+---
+
+Projeto entregue para a disciplina de [Desenvolvimento de Software para a Web](http://github.com/andreainfufsm/elc1090-2026b) em 2026b
+
+```
+
+```
